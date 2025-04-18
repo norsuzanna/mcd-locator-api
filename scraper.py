@@ -1,5 +1,7 @@
 from playwright.async_api import async_playwright
 import re
+from db import save_to_supabase
+import json
 
 async def scrape_mcd_kuala_lumpur():
     async with async_playwright() as p:
@@ -21,11 +23,16 @@ async def scrape_mcd_kuala_lumpur():
 
         for store in stores:
             try:
-                name_el = await store.query_selector(".addressTitle")
-                name = await name_el.inner_text() if name_el else "No Name"
+                # Extract ld+json script block
+                json_script = await store.query_selector("script[type='application/ld+json']")
+                json_text = await json_script.inner_text() if json_script else None
+                details = json.loads(json_text) if json_text else {}
 
-                address_el = await store.query_selector(".addressText")
-                address = await address_el.inner_text() if address_el else "No Address"
+                name = details.get("name", "No Name")
+                address = details.get("address", "No Address")
+                telephone = details.get("telephone")
+                latitude = details.get("geo", {}).get("latitude")
+                longitude = details.get("geo", {}).get("longitude")
 
                 # Ensure the address contains "Kuala Lumpur"
                 if "Kuala Lumpur" not in address:
@@ -55,14 +62,36 @@ async def scrape_mcd_kuala_lumpur():
 
                         await popup.close()
 
-                # Append the store data to the result
+                 # Detect features by icon src
+                feature_icons = await store.query_selector_all("img")
+                icon_srcs = [await img.get_attribute("src") for img in feature_icons if await img.get_attribute("src")]
+
+                def has_icon(keyword):
+                    return any(keyword.lower() in src.lower() for src in icon_srcs)
+
+                operating_hours = "6:30 AM to 12:00 AM"  # default
+                if has_icon("ic_24h"):
+                    operating_hours = "24 Hours"
+
                 data.append({
                     "name": name.strip(),
                     "address": address.strip(),
-                    "operating_hours": '6.30 AM to 12 AM',
-                    "latitude": lat,
-                    "longitude": lng,
-                    "waze_link": waze_link
+                    "telephone": telephone,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "waze_link": waze_link,
+                    "has_birthday_party": has_icon("ic_birthday_party"),
+                    "has_breakfast": has_icon("ic_breakfast"),
+                    "has_cashless_facility": has_icon("ic_cashless"),
+                    "has_dessert_center": has_icon("ic_dessert"),
+                    "has_drive_thru": has_icon("ic_dt"),
+                    "has_mccafe": has_icon("ic_mccafe"),
+                    "has_mcdelivery": has_icon("ic_mcdelivery"),
+                    "has_surau": has_icon("ic_surau"),
+                    "has_wifi": has_icon("ic_wifi"),
+                    "has_digital_kiosk": has_icon("ic_digital_kiosk"),
+                    "has_ev_charging": has_icon("ic_ev"),
+                    "operating_hours": operating_hours
                 })
 
             except Exception as e:
@@ -70,4 +99,8 @@ async def scrape_mcd_kuala_lumpur():
                 continue
 
         await browser.close()
+
+        await save_to_supabase(data)
+        print("[SUCCESS] Data saved to Supabase")
+
         return data
