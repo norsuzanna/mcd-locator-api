@@ -62,3 +62,9 @@ async def list_outlets():
     outlets = [Outlet(**outlet) for outlet in outlets_data]
     
     return outlets
+
+@app.post("/chat")
+async def chat(request: Request):
+    body = await request.json()
+    user_input = body.get("message", "")
+    return {"reply": f"You said: {user_input}"}
