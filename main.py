@@ -3,6 +3,7 @@ from scraper import scrape_mcd_kuala_lumpur
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
+import openai
 import os
 from pydantic import BaseModel
 from typing import List
@@ -22,6 +23,7 @@ app.add_middleware(
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Connect to Supabase
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -66,5 +68,19 @@ async def list_outlets():
 @app.post("/chat")
 async def chat(request: Request):
     body = await request.json()
-    user_input = body.get("message", "")
-    return {"reply": f"You said: {user_input}"}
+    user_message = body.get("message", "")
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that answers queries about McDonald's Malaysia locations, features, and services.",
+                },
+                {"role": "user", "content": user_message},
+            ],
+        )
+        return {"reply": response.choices[0].message["content"]}
+    except Exception as e:
+        return {"reply": f"Error: {str(e)}"}
