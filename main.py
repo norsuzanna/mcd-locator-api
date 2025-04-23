@@ -6,7 +6,6 @@ from pydantic import BaseModel
 from typing import List, AsyncGenerator
 from openai import AsyncOpenAI
 import os
-
 from scraper import scrape_mcd_kuala_lumpur  # Your scraper module
 
 app = FastAPI()
@@ -63,29 +62,21 @@ async def list_outlets():
     outlets_data = response.data
     return [Outlet(**outlet) for outlet in outlets_data]
 
-
-@app.post("/chat")
-async def chat_endpoint(request: Request):
-    body = await request.json()
-    user_message = body.get("message", "")
-
+@app.get("/chat")
+async def chat_endpoint(message: str):
     async def chat_stream() -> AsyncGenerator[str, None]:
-        response = await client.chat.completions.create(
+        stream = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant for McDonald's Malaysia outlet locator. You can answer questions about outlet features, locations, and services.",
-                },
-                {"role": "user", "content": user_message},
+                {"role": "system", "content": "You are a helpful assistant for McDonald's Malaysia outlet locator."},
+                {"role": "user", "content": message},
             ],
             stream=True,
         )
 
-        async for chunk in response:
-            delta = chunk.choices[0].delta
-            if hasattr(delta, "content") and delta.content:
-                yield f"data: {delta.content}\n"
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield f"data: {chunk.choices[0].delta.content}\n"
 
         yield "data: [DONE]\n"
 
