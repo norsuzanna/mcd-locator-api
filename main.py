@@ -8,6 +8,8 @@ import os
 from pydantic import BaseModel
 from typing import List
 
+from openai import OpenAI
+
 app = FastAPI()
 
 app.add_middleware(
@@ -65,22 +67,25 @@ async def list_outlets():
     
     return outlets
 
-@app.post("/chat")
-async def chat(request: Request):
+@router.post("/chat")
+async def chat_endpoint(request: Request):
     body = await request.json()
     user_message = body.get("message", "")
 
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+    async def chat_stream() -> AsyncGenerator[str, None]:
+        stream = client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that answers queries about McDonald's Malaysia locations, features, and services.",
-                },
+                {"role": "system", "content": "You are a helpful assistant for McDonald's Malaysia outlet locator."},
                 {"role": "user", "content": user_message},
             ],
+            stream=True,
         )
-        return {"reply": response.choices[0].message["content"]}
-    except Exception as e:
-        return {"reply": f"Error: {str(e)}"}
+
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield f"data: {chunk.choices[0].delta.content}\n"
+
+        yield "data: [DONE]\n"
+
+    return StreamingResponse(chat_stream(), media_type="text/event-stream")
