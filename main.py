@@ -14,7 +14,7 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mcd-locator.vercel.app/"],  # Replace with specific origin(s) in production
+    allow_origins=["https://mcd-locator.vercel.app"],  # Replace with specific origin(s) in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
