@@ -67,7 +67,7 @@ async def list_outlets():
     
     return outlets
 
-@router.post("/chat")
+@app.post("/chat")
 async def chat_endpoint(request: Request):
     body = await request.json()
     user_message = body.get("message", "")
