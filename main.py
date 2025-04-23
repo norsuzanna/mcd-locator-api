@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import List, AsyncGenerator
 import os
 import asyncio
+from scraper import scrape_mcd_kuala_lumpur
 
 # Load environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -47,6 +48,11 @@ class Outlet(BaseModel):
     has_digital_kiosk: bool
     has_ev_charging: bool
     operating_hours: str
+
+@app.get("/scrape")
+async def scrape_endpoint():
+    stores_data = await scrape_mcd_kuala_lumpur()
+    return stores_data
 
 @app.get("/outlets", response_model=List[Outlet])
 async def list_outlets():
