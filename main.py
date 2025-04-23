@@ -59,31 +59,34 @@ async def list_outlets():
 
 @app.post("/chat")
 async def chat_endpoint(request: Request):
-    """
-    OpenAI streaming chatbot endpoint.
-    """
     body = await request.json()
     user_message = body.get("message", "")
 
-    async def chat_stream() -> AsyncGenerator[str, None]:
-        stream = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful assistant for McDonald's Malaysia outlet locator. "
-                        "You can answer queries like 'Which outlet near KLCC has Wi-Fi?' or 'Which outlets are 24 hours?'"
-                    )
-                },
-                {"role": "user", "content": user_message}
-            ],
-            stream=True,
-        )
+    # Function to check if an outlet operates 24 hours
+    def is_open_24_hours(outlet):
+        # Check if operating_hours contains '24 hours' (case-insensitive)
+        return '24 hours' in outlet.operating_hours.lower()
 
-        async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                yield f"data: {chunk.choices[0].delta.content}\n"
+    # Fetch all outlets from Supabase
+    response = supabase.table("outlets").select("*").execute()
+    outlets_data = response.data
+    outlets = [Outlet(**outlet) for outlet in outlets_data]
+
+    # If the query is asking about 24-hour outlets
+    if "24 hours" in user_message.lower():
+        open_24_hours_outlets = [outlet for outlet in outlets if is_open_24_hours(outlet)]
+        if open_24_hours_outlets:
+            response_message = "Here are the outlets that are open 24 hours:\n"
+            response_message += "\n".join([outlet.name for outlet in open_24_hours_outlets])
+        else:
+            response_message = "Sorry, no outlets are open 24 hours."
+    else:
+        response_message = "I'm sorry, I didn't understand that. Please ask about McDonald's outlets."
+
+    # Stream the response
+    async def chat_stream():
+        yield f"data: {response_message}\n"
         yield "data: [DONE]\n"
 
     return StreamingResponse(chat_stream(), media_type="text/event-stream")
+
