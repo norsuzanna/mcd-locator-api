@@ -1,88 +1,100 @@
-# 📦 McDonald's Malaysia Outlet Scraper & API
+# 🧠 McD Locator API – FastAPI + Supabase + OpenAI
 
-This project scrapes McDonald's Malaysia outlet data filtered by **Kuala Lumpur**, geocodes them, stores the data in a **Supabase PostgreSQL** database, and serves the data through a **FastAPI backend**.
-
----
-
-## 🚀 Features
-
-- ✅ Scrapes name, address, operating hours, and Waze link for each outlet
-- ✅ Automatically geocodes address to get coordinates
-- ✅ Stores results in Supabase PostgreSQL
-- ✅ FastAPI-based REST API to serve the data
-- ✅ Deployable to Heroku
+This is the backend API for the **McD Locator** project – a geolocation-aware FastAPI service that powers outlet queries, chatbot interactions, and supports natural language searches for McDonald’s outlets in Malaysia.
 
 ---
 
-## 🏗️ Tech Stack
+## 📦 API Features
 
-| Layer        | Tech                                         |
-| ------------ | -------------------------------------------- |
-| Web Scraping | [Playwright](https://playwright.dev/python/) |
-| Backend API  | [FastAPI](https://fastapi.tiangolo.com/)     |
-| Database     | [Supabase PostgreSQL](https://supabase.com/) |
-| Deployment   | [Heroku](https://www.heroku.com/)            |
-
----
-
-## 📁 Project Structure
-
-- **`db.py`**: Handles PostgreSQL database connections and queries.
-- **`scraper.py`**: Contains the Playwright code to scrape McDonald's outlets and their details.
-- **`main.py`**: The FastAPI application that serves as the backend API.
-- **`models.py`**: Contains the Pydantic models used for validating API request and response data.
-- **`Procfile`**: Used by Heroku to define the command to run the app.
-- **`requirements.txt`**: Contains the Python dependencies.
-- **`runtime.txt`**: Specifies the Python version to use for deployment in Heroku.
-- **`.env`**: Stores sensitive information like API keys and database credentials (should be excluded from version control).
+- 🔍 Query McDonald's outlets and features via REST API
+- 💬 Chat endpoint for location-based and feature-specific searches (e.g. Wi-Fi, 24 hours)
+- 📡 Supports geolocation queries like:
+  - "McDonald's near KLCC"
+  - "Outlets between Mid Valley and Pavilion"
+- 🧠 OpenAI-powered chat logic (if `OPENAI_API_KEY` is configured)
+- ⚡ Supabase PostgreSQL integration
 
 ---
 
-## 🧰 Setup Instructions
+## 🧱 Tech Stack
 
-### 1. Clone the Repository
+| Component   | Description                        |
+|------------|------------------------------------|
+| FastAPI     | Modern async web framework         |
+| Supabase    | PostgreSQL backend + API client    |
+| Uvicorn     | ASGI server for local dev/deploy   |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the Repo
 
 ```bash
-git clone https://github.com/yourusername/mcd-scraper-api.git
-cd mcd-scraper-api/backend
+git clone https://github.com/norsuzanna/mcd-locator-api.git
+cd mcd-locator-api
 ```
 
-### 2. Install Python Dependencies
+### 2. Create .env
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-supabase-key
+OPENAI_API_KEY=sk-... (optional)
+```
+
+### 3. Install Requirements
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 🛠️ Set Up Supabase PostgreSQL
+### 4. Run the API Locally
 
-Follow these steps to create and connect your database:
-
-### 1. Create a Supabase Project
-
-- Go to [https://supabase.com](https://supabase.com)
-- Click **Start Project** and sign in
-- Create a **new project**
-- Set a name, password, and choose your region
-- Wait for the project to be initialized
-
-### 2. Get Database Credentials
-
-- Go to the **Project Dashboard**
-- Navigate to `Settings` → `Database`
-- Copy the `Connection string` (use the `URI` format)
-
-### 3. Create the Database Table
-
-Go to the **SQL Editor** tab and run this SQL to create the `outlets` table:
-
-```sql
-CREATE TABLE outlets (
-  id SERIAL PRIMARY KEY,
-  name TEXT,
-  address TEXT,
-  operating_hours TEXT,
-  waze_link TEXT,
-  latitude DOUBLE PRECISION,
-  longitude DOUBLE PRECISION
-);
+```bash
+uvicorn main:app --reload
 ```
+
+## 📂 Project Structure
+
+```bash
+mcd-locator-api/
+│
+├── main.py              # FastAPI app and router
+├── chat.py              # Chatbox logic + natural query handling
+├── models.py            # Outlet data model (pydantic)
+├── supabase.py          # Supabase client setup
+├── requirements.txt     # Python dependencies
+└── .env                 # Environment variables
+```
+
+## 🔌 API Endpoints
+
+| Method   | Endpoint  | Description  |
+|----------|-----------|--------------|
+| GET      | /scrape   | Web scraping |
+| GET      | /outlets  | Outlet list  |
+| POST     | /chat     | Chatbox      |
+
+## 🧠 Sample Queries Supported
+* "Which outlets open 24 hours?"
+
+* "Show me outlets with EV charging"
+
+* "Do any outlets offer birthday party?"
+
+## 🛰 Deployment
+This project supports deployment on Heroku or Railway.
+
+Heroku Procfile Example:
+
+```bash
+web: uvicorn main:app --host=0.0.0.0 --port=${PORT}
+```
+
+## 🙌 Acknowledgements
+Built with ❤️ by [@norsuzanna](https://github.com/norsuzanna)<br>
+Part of the McD Locator project: 🔗 Frontend: [norsuzanna/mcd-locator](https://github.com/norsuzanna/mcd-locator)
+
+## 📄 License
+This project is licensed under the MIT License.
