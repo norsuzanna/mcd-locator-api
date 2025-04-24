@@ -101,6 +101,5 @@ async def scrape_mcd_kuala_lumpur():
         await browser.close()
 
         await save_to_supabase(data)
-        print("[SUCCESS] Data saved to Supabase")
 
         return data

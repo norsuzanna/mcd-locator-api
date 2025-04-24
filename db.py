@@ -19,7 +19,6 @@ supabase = create_client(url, key)
 async def save_to_supabase(data: list[dict]):
     for item in data:
         try:
-            response = supabase.table(table_name).insert(item).execute()
-            print(f"[INFO] Inserted: {item['name']}")
+            supabase.table(table_name).insert(item).execute()
         except Exception as e:
             print(f"[ERROR] Failed to insert {item['name']}: {e}")

@@ -8,6 +8,7 @@ from typing import List, AsyncGenerator
 import os
 import asyncio
 from scraper import scrape_mcd_kuala_lumpur
+from chat import chatbox
 
 # Load environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -65,34 +66,4 @@ async def list_outlets():
 
 @app.post("/chat")
 async def chat_endpoint(request: Request):
-    body = await request.json()
-    user_message = body.get("message", "")
-
-    # Function to check if an outlet operates 24 hours
-    def is_open_24_hours(outlet):
-        # Check if operating_hours contains '24 hours' (case-insensitive)
-        return '24 hours' in outlet.operating_hours.lower()
-
-    # Fetch all outlets from Supabase
-    response = supabase.table("outlets").select("*").execute()
-    outlets_data = response.data
-    outlets = [Outlet(**outlet) for outlet in outlets_data]
-
-    # If the query is asking about 24-hour outlets
-    if "24 hours" in user_message.lower():
-        open_24_hours_outlets = [outlet for outlet in outlets if is_open_24_hours(outlet)]
-        if open_24_hours_outlets:
-            response_message = "Here are the outlets that are open 24 hours:\n"
-            response_message += "\n".join([outlet.name for outlet in open_24_hours_outlets])
-        else:
-            response_message = "Sorry, no outlets are open 24 hours."
-    else:
-        response_message = "I'm sorry, I didn't understand that. Please ask about McDonald's outlets."
-
-    # Stream the response
-    async def chat_stream():
-        yield f"data: {response_message}\n"
-        yield "data: [DONE]\n"
-
-    return StreamingResponse(chat_stream(), media_type="text/event-stream")
-
+    return await chatbox(request)
